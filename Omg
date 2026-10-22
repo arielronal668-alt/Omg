@@ -1,0 +1,577 @@
+Configuración local, Conexiones = ...
+
+local _ENV = (getgenv o getrenv o getfenv)()
+
+Si type(Settings) ~= "table" o type(Connections) ~= "table" entonces
+	devolver {}
+fin
+
+local VirtualInputManager: VirtualInputManager = game:GetService("VirtualInputManager")
+local CollectionService: CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage: ReplicatedStorage = juego:GetService("ReplicatedStorage")
+TeleportService local: TeleportService = juego:GetService("TeleportService")
+RunService local: RunService = juego:GetService("RunService")
+Jugadores locales: Jugadores = juego:GetService("Jugadores")
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local GunValidator: RemoteEvent = Remotes:WaitForChild("Validator2")
+local CommF: RemoteFunction = Remotes:WaitForChild("CommF_")
+CommE local: RemoteEvent = Remotos:WaitForChild("CommE")
+
+local ChestModels: Carpeta = espacio de trabajo:EsperarParaElNiño("ChestModels")
+local WorldOrigin: Carpeta = espacio de trabajo:EsperarAlNiño("_WorldOrigin")
+Caracteres locales: Carpeta = espacio de trabajo:EsperarParaElHijo("Caracteres")
+local SeaBeasts: Carpeta = workspace:WaitForChild("SeaBeasts")
+Enemigos locales: Carpeta = espacio de trabajo:WaitForChild("Enemigos")
+Barcos locales: Carpeta = espacio de trabajo:WaitForChild("Barcos")
+Mapa local: Modelo = espacio de trabajo:EsperarHijo("Mapa")
+
+Enemigos locales: Carpeta = WorldOrigin:WaitForChild("EnemySpawns")
+Ubicaciones locales: Carpeta = WorldOrigin:WaitForChild("Locations")
+
+RenderStepped local = RunService.RenderStepped
+latido local = RunService.Heartbeat
+local escalonado = RunService.Stepped
+Jugador local = Jugadores.JugadorLocal
+
+Datos locales: Carpeta = Jugador:EsperarHijo("Datos")
+Nivel local: IntValue = Data:WaitForChild("Level")
+Fragmentos locales: IntValue = Data:WaitForChild("Fragmentos")
+Dinero local: IntValue = Data:WaitForChild("Beli")
+
+Módulos locales: Carpeta? = ReplicatedStorage:WaitForChild("Módulos")
+Red local: ModuleScript = Modules:WaitForChild("Net")
+
+local NOMBRE_EJECUTOR = string.upper(if identifyexecutor then identifyexecutor() else "NULL")
+local IS_BLACKLISTED_EXECUTOR = table.find({"NULL", "XENO", "SWIFT", "JJSPLOIT"}, EXECUTOR_NAME)
+
+local hookmetamethod = (no IS_BLACKLISTED_EXECUTOR y hookmetamethod) o (function(...) return ... end)
+función_gancho_local = (no ES_EJECUTOR_EN_LISTA_NEGRA y función_gancho) o (función(...) devolver ... fin)
+local sethiddenproperty: (Instancia, cadena, cualquiera?) -> (nil) = sethiddenproperty o (función(...) devolver ... fin)
+
+valor de configuración local: (cualquiera, número, cualquiera?) -> (nulo) = valor de configuración o (depuración y depuración.valor de configuración)
+local getupvalue: (cualquiera, número) -> cualquiera = getupvalue o (debug y debug.getupvalue)
+
+local BRING_TAG: cadena = _ENV._Bring_Tag o `b{math.random(80, 2e4)}t`
+local KILLAURA_TAG: cadena = _ENV._KillAura_Tag o `k{math.random(120, 2e4)}t`
+
+local HIDDEN_SETTINGS: { [string]: any } = {
+	TIEMPO DE ENFRIAMIENTO DE LA HABILIDAD = 0.5,
+	CLEAR_AFTER = 50
+}
+
+_ENV._Bring_Tag = BRING_TAG
+_ENV._KillAura_Tag = KILLAURA_TAG
+
+función local GetEnemyName(string: string): string
+	devolver (cadena:find("Lv. ") y cadena:gsub(" %pLv. %d+%p", "") o cadena):gsub(" %pBoss%p", "")
+fin
+
+función local CheckPlayerAlly(__Player: Player): booleano
+	Si tostring(__Player.Team) == "Marines" y __Player.Team == Player.Team entonces
+		devolver falso
+	elseif __Player:HasTag(`Ally{Player.Name}`) o Player:HasTag(`Ally{__Player.Name}`) entonces
+		devolver falso
+	fin
+	
+	devolver verdadero
+fin
+
+función local WaitChilds(Instancia, ...)
+	para _, ChildName en ipairs({...}) haga
+		Instancia = Instancia:EsperarHijo(NombreHijo)
+	fin
+	Devuelve una instancia.
+fin
+
+función local FastWait(Segundos, Instancia, ...)
+	local Éxito, Resultado = pcall(function(...)
+		para _, ChildName en ipairs({...}) haga
+			Instancia = Instancia:EsperarHijo(NombreHijo, Segundos)
+		fin
+		Devuelve una instancia.
+	fin, ...)
+	
+	Devuelve Éxito y Resultado o ninguno
+fin
+
+función local CreateNewClear()
+	local COUNT_NEWINDEX = 0
+	
+	devolver {
+		__newindex = función(self, índice, valor)
+			Si COUNT_NEWINDEX >= HIDDEN_SETTINGS.CLEAR_AFTER entonces
+				para clave, caché en pares(self) hacer
+					Si typeof(cache) == "Instance" y no cache:IsDescendantOf(game) entonces
+						rawset(self, key, nil)
+					fin
+				fin
+				COUNT_NEWINDEX = 0
+			fin
+			
+			COUNT_NEWINDEX += 1
+			devolver rawset(self, índice, valor)
+		fin
+	}
+fin
+
+función CrearDiccionario(array: { string }, value: any?): { [string]: any? }
+	Diccionario local = {}
+	
+	para _, cadena en ipairs(array) hacer
+		Diccionario[cadena] = si tipo(valor) == "tabla" entonces {} sino valor
+	fin
+	
+	devolver diccionario
+fin
+
+Señal local = {} hacer
+	Conexión local = {} hacer
+		Conexión.__index = Conexión
+		
+		función Connection:Disconnect(): (nil)
+			si no es self.Connected entonces
+				devolver cero
+			fin
+			
+			local find = table.find(self.Signal, self)
+			
+			si lo encuentra entonces
+				tabla.eliminar(self.Signal, encontrar)
+			fin
+			
+			Función propia = nil
+			self.Connected = false
+		fin
+		
+		función Connection:Fire(...): (nil)
+			si no self.Función entonces
+				devolver cero
+			fin
+			
+			tarea.spawn(self.Function, ...)
+		fin
+		
+		función Connection.new(): Conexión
+			devolver setmetatable({
+				Conectado = verdadero
+			}, Conexión)
+		fin
+		
+		establecermetatable(Conexión, {
+			__index = función(self, index)
+				error(("Intento de obtener Connection::%s (no es un miembro válido)"):format(tostring(index)), 2)
+			fin,
+			__newindex = función(tb, clave, valor)
+				error(("Intento de establecer Connection::%s (no es un miembro válido)"):format(tostring(key)), 2)
+			fin
+		})
+	fin
+	
+	Señal.__índice = Señal
+	
+	Función Señal:Conectar(Función): Conexión
+		Si type(Function) ~= "function" entonces
+			devolver cero
+		fin
+		
+		local NuevaConexión = Conexión.nueva()
+		NuevaConexión.Función = Función
+		NuevaConexión.Señal = auto
+		
+		tabla.insertar(self.Connections, NewConnection)
+		devolver NuevaConexión
+	fin
+	
+	Función Señal:UnaVez(Función): (nulo)
+		Conexión local;
+		Conexión = self:Connect(function(...)
+			Función(...)
+			Conexión:Desconectar()
+		fin)
+		Regresar conexión
+	fin
+	
+	Función Signal:Wait(): ¿alguna?
+		local WaitingCoroutine = coroutine.running()
+		Conexión local;Conexión = self:Connect(function(...)
+			Conexión:Desconectar()
+			tarea.spawn(WaitingCoroutine, ...)
+		fin)
+		devolver corrutina.yield()
+	fin
+	
+	función Señal:Disparo(...): (nulo)
+		para _, Conexión en ipairs(self.Connections) hacer
+			Si Connection.Connected entonces
+				Conexión:Fuego(...)
+			fin
+		fin
+	fin
+	
+	función Signal.new(): Señal
+		devolver setmetatable({
+			Conexiones = {}
+		}, Señal)
+	fin
+	
+	setmetatable(Señal, {
+		__index = función(self, index)
+			error(`Intento de obtener Signal::{ tostring(index) } (no es un miembro válido)`, 2)
+		fin,
+		__newindex = función(self, índice, valor)
+			error(`Intento de establecer Signal::{ tostring(index) } (no es un miembro válido)`, 2)
+		fin
+	})
+fin
+
+Si table.find({2753915549, 85211729168715, 113741252407134, 114279672983750}, game.PlaceId) entonces
+    SeaId = 1
+elseif table.find({4442272183, 79091703265657}, game.PlaceId) entonces
+    SeaId = 2
+elseif table.find({7449423635, 100117331123089}, game.PlaceId) entonces
+    SeaId = 3
+fin
+
+local LevelCap = game.Players.LocalPlayer:GetAttribute("LevelCap")
+si LevelCap y LevelCap > 2800 y LevelCap <= 3000 entonces
+    Nivel máximo = 2800
+fin
+
+Módulo local = {} hacer
+	Cached local = {
+		Más cercano = ninguno,
+		Equipado = nulo,
+		Humanoides = establecermetatable({}, CrearNuevoBorrar()),
+		Enemigos = {}, -- setmetatable({}, CreateNewClear()),
+		Progreso = {},
+		Traer = {},
+		Herramientas = {}
+	}
+	
+	Módulo.GameData = {
+		Mar = SeaId,
+		SeasName = { "Principal", "Dressrosa", "Zou" },
+		MaxMastery = 600,
+		NivelMáximo = NivelLímite,
+        StringVersion = require(ReplicatedStorage.BuildInfo).VERSION
+	}
+	
+	Módulo.Debounce = {
+		TargetDebounce = 0,
+		UpdateDebounce = 0,
+		ObtenerEnemigo = 0,
+		Habilidades = {}
+	}
+	
+	hacer
+   
+      Módulo.FruitsId = {
+			["rbxassetid://15124425041"] = "Cohete",
+			["rbxassetid://15123685330"] = "Girar",
+			["rbxassetid://15123613404"] = "Hoja",
+			["rbxassetid://15123689268"] = "Primavera",
+			["rbxassetid://15123595806"] = "Bomba",
+			["rbxassetid://15123677932"] = "Humo",
+			["rbxassetid://15124220207"] = "Spike",
+			["rbxassetid://121545956771325"] = "Llama",
+			["rbxassetid://15123673019"] = "Arena",
+			["rbxassetid://15123618591"] = "Oscuro",
+			["rbxassetid://77885466312115"] = "Águila",
+			["rbxassetid://15112600534"] = "Diamante",
+			["rbxassetid://15123640714"] = "Luz",
+			["rbxassetid://15123668008"] = "Caucho",
+			["rbxassetid://15123662036"] = "Fantasma",
+			["rbxassetid://15123645682"] = "Magma",
+			["rbxassetid://15123606541"] = "Terremoto",
+			["rbxassetid://15123606541"] = "Buda",
+			["rbxassetid://15123643097"] = "Amor",
+			["rbxassetid://15123681598"] = "Araña",
+			["rbxassetid://116828771482820"] = "Creación",
+			["rbxassetid://15123679712"] = "Sonido",
+			["rbxassetid://15123654553"] = "Phoenix",
+			["rbxassetid://15123656798"] = "Portal",
+			["rbxassetid://15123670514"] = "Rumble",
+			["rbxassetid://15123652069"] = "Dolor",
+			["rbxassetid://15123587371"] = "Ventisca",
+			["rbxassetid://15123633312"] = "Gravedad",
+			["rbxassetid://15123648309"] = "Mamut",
+			["rbxassetid://15694681122"] = "T-Rex",
+			["rbxassetid://15123624401"] = "Masa",
+			["rbxassetid://15123675904"] = "Sombra",
+			["rbxassetid://10773719142"] = "Venom",
+			["rbxassetid://15123616275"] = "Control",
+			["rbxassetid://11911905519"] = "Espíritu",
+			["rbxassetid://15123638064"] = "Leopardo",
+			["rbxassetid://15487764876"] = "Kitsune",
+			["rbxassetid://115276580506154"] = "Yeti",
+			["rbxassetid://118054805452821"] = "Gas",
+			["rbxassetid://95749033139458"] = "Dragón Este"
+		}
+
+       CACHE_NPC_LIST = require(game.ReplicatedStorage.GuideModule).Data.NPCList
+función obtenerPosiciónDeLaQuesa(Nombre)
+    para _, v en next, CACHE_NPC_LIST hacer
+        si typeof(v) == "tabla" entonces
+            para _, x en siguiente, v hacer
+                si x == Nombre entonces
+                    Posición local = v.Posición
+                    si typeof(Position) == "CFrame" entonces
+                        Regresar a la posición
+                    elseif typeof(Position) == "Vector3" entonces
+                        devolver CFrame.new(Position)
+                    fin
+                fin
+            fin
+        fin
+    fin
+    devolver cero
+fin
+		
+		si SeaId == 1 entonces
+    Módulo.Jefes = {
+        ["Experto en sables"] = {
+            NoQuest = verdadero,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Saber Expert"].CFrame
+        },
+
+        ["La sierra"] = {
+            Jefe de incursión = verdadero,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["The Saw"].CFrame
+        },
+
+        ["Barba gris"] = {
+            Jefe de incursión = verdadero,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Greybeard"].CFrame
+        },
+
+        ["El Rey Gorila"] = {
+            EsJefe = verdadero,
+            Nivel = 20,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["The Gorilla King"].CFrame,
+            Misión = {"JungleQuest", getQuestPosition("JungleQuest")}
+        },
+
+        ["Bobby"] = {
+            EsJefe = verdadero,
+            Nivel = 55,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Chef"].CFrame,
+            Misión = {"BuggyQuest1", getQuestPosition("BuggyQuest1")}
+        },
+
+        ["Yeti"] = {
+            EsJefe = verdadero,
+            Nivel = 105,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Yeti"].CFrame,
+            Misión = {"MisiónDeNieve", obtenerPosiciónDeMisión("MisiónDeNieve")}
+        },
+
+        ["Vicealmirante"] = {
+            EsJefe = verdadero,
+            Nivel = 130,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Vice Admiral"].CFrame,
+            Misión = {"MarineQuest2", getQuestPosition("MarineQuest2"), 2}
+        },
+        ["Alcaide"] = {
+            EsJefe = verdadero,
+            Nivel = 220,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Warden"].CFrame,
+            Misión = {"ImpelQuest", getQuestPosition("ImpelQuest"), 2}
+        },
+
+        ["General Magma"] = {
+            EsJefe = verdadero,
+            Nivel = 350,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Magma Admiral"].CFrame,
+            Misión = {"MagmaQuest", getQuestPosition("MagmaQuest")}
+        },
+
+        ["Señor Pez"] = {
+            EsJefe = verdadero,
+            Nivel = 425,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Fishman Lord"].CFrame,
+            Misión = {"MisiónPescador", obtenerPosiciónDeMisión("MisiónPescador")}
+        },
+
+        ["Señor de la Guerra del Cielo"] = {
+            EsJefe = verdadero,
+            Nivel = 500,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Wysper"].CFrame,
+            Misión = {"SkyExp1Quest", getQuestPosition("SkyExp1Quest"), 3}
+        },
+
+        ["Dios del Rayo"] = {
+            EsJefe = verdadero,
+            Nivel = 575,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Thunder God"].CFrame,
+            Misión = {"SkyExp2Quest", getQuestPosition("SkyExp2Quest"), 3}
+        },
+
+        ["Cyborg"] = {
+            EsJefe = verdadero,
+            Nivel = 675,
+            Posición = juego:GetService("ReplicatedStorage").FortBuilderReplicatedSpawnPositionsFolder["Cyborg"].CFrame,
+            Misión = {"FountainQuest", getQuestPosition("FountainQuest")}
+        }
+    }
+
+elseif SeaId == 2 entonces
+    Módulo.Jefes = {
+        ["Don Swan"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(2289, 15, 808)
+        },
+
+        ["Capitán maldito"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(912, 186, 33591)
+        },
+
+        ["Barbaoscura"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(3695, 13, -3599)
+        },
+
+        ["Diamante"] = {
+            EsJefe = verdadero,
+            Nivel = 750,
+            Posición = CFrame.new(-1569, 199, -31),
+            Misión = {"Area1Quest", CFrame.new(-427, 73, 1835)}
+        },
+
+        ["Jeremy"] = {
+            EsJefe = verdadero,
+            Nivel = 850,
+            Posición = CFrame.new(2316, 449, 787),
+            Misión = {"Area2Quest", CFrame.new(635, 73, 919)}
+        },
+
+        ["Órbito"] = {
+            EsJefe = verdadero,
+            Nivel = 925,
+            Posición = CFrame.new(-2086, 73, -4208),
+            Misión = {"MarineQuest3", CFrame.new(-2441, 73, -3219)}
+        },
+
+        ["Almirante de Humo"] = {
+            EsJefe = verdadero,
+            Nivel = 1150,
+            Posición = CFrame.new(-5078, 24, -5352),
+            Misión = {"IceSideQuest", CFrame.new(-6229, 82, -4853)}
+        },
+
+        ["Almirante de Hielo Despertado"] = {
+            EsJefe = verdadero,
+            Nivel = 1400,
+            Posición = CFrame.new(6473, 297, -6944),
+            Misión = {"FrostQuest", CFrame.new(5668, 28, -6484)}
+        },
+
+        ["Guardián de mareas"] = {
+            EsJefe = verdadero,
+            Nivel = 1475,
+            Posición = CFrame.new(-3711, 77, -11469),
+            Misión = {"MisiónOlvidada", CFrame.new(-3056, 240, -10145)}
+        }
+    }
+
+elseif SeaId == 3 entonces
+    Módulo.Jefes = {
+        ["Tirano de los Cielos"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(-16252, 153, 1394)
+        },
+
+        ["Príncipe Pastel"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(-2103, 70, -12165)
+        },
+
+        ["Rey de la masa"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(-2103, 70, -12165)
+        },
+
+        ["rip_indra Forma verdadera"] = {
+            Jefe de incursión = verdadero,
+            Posición = CFrame.new(-5333, 424, -2673)
+        },
+
+        ["Piedra"] = {
+            EsJefe = verdadero,
+            Nivel = 1550,
+            Posición = CFrame.new(-1049, 40, 6791),
+            Misión = {"PiratePortQuest", CFrame.new(-449, 109, 5950)}
+        },
+
+        ["Líder de Hydra"] = {
+            EsJefe = verdadero,
+            Nivel = 1675,
+            Posición = CFrame.new(5836, 1019, -83),
+            Misión = {"VenomCrewQuest", CFrame.new(5214, 1004, 761)}
+        },
+
+        ["Kilo Admiral"] = {
+            EsJefe = verdadero,
+            Nivel = 1750,
+            Posición = CFrame.new(2904, 509, -7349),
+            Misión = {"MarineTreeIsland", CFrame.new(2485, 74, -6788)}
+        },
+
+        ["Capitán Elefante"] = {
+            EsJefe = verdadero,
+            Nivel = 1875,
+            Posición = CFrame.new(-13393, 319, -8423),
+            Misión = {"Isla del Bosque Profundo", CFrame.new(-13233, 332, -7626)}
+        },
+
+        ["Hermosa pirata"] = {
+            EsJefe = verdadero,
+            Nivel = 1950,
+            Posición = CFrame.new(5370, 22, -89),
+            Misión = {"DeepForestIsland2", CFrame.new(-12682, 391, -9901)}
+        },
+
+        ["Reina de los pasteles"] = {
+            EsJefe = verdadero,
+            Nivel = 2175,
+            Posición = CFrame.new(-710, 382, -11150),
+            Misión = {"IceCreamIslandQuest", CFrame.new(-818, 66, -10964)}
+        },
+
+        ["Longma"] = {
+            NoQuest = verdadero,
+            Posición = CFrame.new(-10218, 333, -9444)
+        }
+    }
+fin
+		
+		Módulo.Tienda = {
+            --[[{"Elfo Mágico", {{"Comprar 2x EXP", {"Caramelos", "Comprar", 1, 1}}, {"Comprar Reembolso de Estadísticas", {"Caramelos", "Comprar", 1, 2}}, {"Comprar Reroll de Raza", {"Caramelos", "Comprar", 1, 3}}}},
+            {"Elfo codicioso", {{"Comprar 200 fragmentos", {"Caramelos", "Comprar", 2, 1}}, {"Comprar 500 fragmentos", {"Caramelos", "Comprar", 2, 2}}}},
+            {"Garras de Santa", {{"Comprar gorro de elfo", {"Caramelos", "Comprar", 3, 1}}, {"Comprar gorro de Santa", {"Caramelos", "Comprar", 3, 2}}, {"Comprar trineo", {"Caramelos", "Comprar", 3, 3}}}},]]
+			{"Frags", {{"Race Reroll", {"BlackbeardReward", "Reroll", "2"}}, {"Reset Stats", {"BlackbeardReward", "Refund", "2"}}}},
+			{"Profesor de habilidades", {
+				{"Comprar Geppo", {"ComprarHaki", "Geppo"}},
+				{"Comprar Buso", {"ComprarHaki", "Buso"}},
+				{"Comprar Soru", {"ComprarHaki", "Soru"}},
+				{"Comprar Ken", {"KenTalk", "Comprar"}}
+			}},
+			{"Espada", {
+				{"Comprar Katana", {"ComprarArtículo", "Katana"}},
+				{"Comprar Cutlass", {"ComprarArtículo", "Cutlass"}},
+				{"Comprar Katana Doble", {"ComprarArtículo", "Katana Doble"}},
+				{"Comprar Maza de Hierro", {"ComprarArtículo", "Maza de Hierro"}},
+				{"Comprar Triple Katana", {"ComprarArtículo", "Triple Katana"}},
+				{"Comprar tubería", {"Comprar artículo", "Tubería"}},
+				{"Comprar hoja de doble cabezal", {"Comprar artículo", "Hoja de doble cabezal"}},
+				{"Comprar Bastón del Alma", {"ComprarArtículo", "Bastón del Alma"}},
+				{"Comprar Bisento", {"ComprarArtículo", "Bisento"}}
+			}},
+			{"Pistola", {
+				{"Comprar mosquete", {"Comprar artículo", "Mosquete"}},
+				{"Comprar tirachinas", {"Comprar artículo", "tirachinas"}},
+				{"Comprar pistola de chispa", {"Comprar artículo", "Pistola de chispa"}},
+				{"Comprar Tirachinas Refinado", {"ComprarArtículo", "Tirachinas Refinado"}},
+				{"Comprar pistola de chispa doble", {"Comprar artículo", "Pistola de chispa doble"}},
+				{"Comprar cañón", 
